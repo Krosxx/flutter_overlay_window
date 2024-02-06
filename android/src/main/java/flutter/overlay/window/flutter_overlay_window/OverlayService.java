@@ -82,6 +82,7 @@ public class OverlayService extends Service implements View.OnTouchListener {
             flutterView.detachFromFlutterEngine();
             flutterView = null;
         }
+        OverlayStatusEmitter.emitIsShowing(false);
         NotificationManager notificationManager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.cancel(OverlayConstants.NOTIFICATION_ID);
     }
@@ -153,6 +154,7 @@ public class OverlayService extends Service implements View.OnTouchListener {
         params.gravity = WindowSetup.gravity;
         flutterView.setOnTouchListener(this);
         windowManager.addView(flutterView, params);
+        OverlayStatusEmitter.emitIsShowing(true);
         return START_STICKY;
     }
 
