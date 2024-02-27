@@ -1,6 +1,5 @@
 package flutter.overlay.window.flutter_overlay_window;
 
-
 import android.view.Gravity;
 import android.view.WindowManager;
 import androidx.core.app.NotificationCompat;
