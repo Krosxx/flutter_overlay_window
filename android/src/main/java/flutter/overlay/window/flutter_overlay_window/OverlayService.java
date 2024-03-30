@@ -283,6 +283,7 @@ public class OverlayService extends Service implements View.OnTouchListener {
     @Override
     public boolean onTouch(View view, MotionEvent event) {
         if (windowManager != null && WindowSetup.enableDrag) {
+            OverlayStatusEmitter.emitTouchEvent(event);
             WindowManager.LayoutParams params = (WindowManager.LayoutParams) flutterView.getLayoutParams();
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
