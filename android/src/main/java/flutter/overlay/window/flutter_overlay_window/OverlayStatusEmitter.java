@@ -20,13 +20,15 @@ public abstract class OverlayStatusEmitter {
         }
     }
 
-    static void emitTouchEvent(MotionEvent event) {
+    static void emitTouchEvent(MotionEvent event, int height, int width) {
         Map<String, Object> data = new HashMap<>();
         data.put("action", event.getAction());
         data.put("x", event.getX());
         data.put("y", event.getY());
         data.put("rawX", event.getRawX());
         data.put("rawY", event.getRawY());
+        data.put("height", height);
+        data.put("width", width);
         data.put("pointerCount", event.getPointerCount());
 
         if(CachedMessageChannels.mainAppMessageChannel != null) {
