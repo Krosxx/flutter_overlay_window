@@ -64,6 +64,8 @@ public class OverlayService extends Service implements View.OnTouchListener {
     private Timer mTrayAnimationTimer;
     private TrayAnimationTimerTask mTrayTimerTask;
 
+    private boolean handleThisTouch = false;
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -293,15 +295,19 @@ public class OverlayService extends Service implements View.OnTouchListener {
     @Override
     public boolean onTouch(View view, MotionEvent event) {
         if (windowManager != null && WindowSetup.enableDrag) {
-            OverlayStatusEmitter.emitTouchEvent(event, view);
+            if (event.getAction() == MotionEvent.ACTION_DOWN || handleThisTouch) {
+                OverlayStatusEmitter.emitTouchEvent(event, view);
+            }
             WindowManager.LayoutParams params = (WindowManager.LayoutParams) flutterView.getLayoutParams();
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
+                    handleThisTouch = true;
                     dragging = false;
                     lastX = event.getRawX();
                     lastY = event.getRawY();
                     break;
                 case MotionEvent.ACTION_MOVE:
+                    if (!handleThisTouch) break;
                     float dx = event.getRawX() - lastX;
                     float dy = event.getRawY() - lastY;
                     if (!dragging && dx * dx + dy * dy < 25) {
@@ -318,6 +324,8 @@ public class OverlayService extends Service implements View.OnTouchListener {
                     break;
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
+                    if (!handleThisTouch) break;
+                    handleThisTouch = false;
                     lastYPosition = params.y;
                     Map<String, Object> data = OverlayStatusEmitter.fillViewData(view, new HashMap<>());
                     if (!Objects.equals(WindowSetup.positionGravity, "none")) {
@@ -335,6 +343,10 @@ public class OverlayService extends Service implements View.OnTouchListener {
                     return false;
             }
             return false;
+        } else {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                handleThisTouch = false;
+            }
         }
         return false;
     }
