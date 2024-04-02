@@ -27,6 +27,8 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -317,13 +319,16 @@ public class OverlayService extends Service implements View.OnTouchListener {
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
                     lastYPosition = params.y;
+                    Map<String, Object> data = OverlayStatusEmitter.fillViewData(view, new HashMap<>());
                     if (!Objects.equals(WindowSetup.positionGravity, "none")) {
                         windowManager.updateViewLayout(flutterView, params);
                         int[] loc = new int[2];
                         view.getLocationOnScreen(loc);
-                        mTrayTimerTask = new TrayAnimationTimerTask(loc[0] + view.getWidth() / 2, view.getWidth(), screenWidth());
+                        mTrayTimerTask = new TrayAnimationTimerTask(data, loc[0] + view.getWidth() / 2, view.getWidth(), screenWidth());
                         mTrayAnimationTimer = new Timer();
                         mTrayAnimationTimer.schedule(mTrayTimerTask, 0, 25);
+                    } else {
+                        OverlayStatusEmitter.emitAnimationEnd(data);
                     }
                     return false;
                 default:
@@ -337,10 +342,12 @@ public class OverlayService extends Service implements View.OnTouchListener {
     private class TrayAnimationTimerTask extends TimerTask {
         int mDestX;
         int mDestY;
+        Map<String, Object> data;
         WindowManager.LayoutParams params = (WindowManager.LayoutParams) flutterView.getLayoutParams();
 
-        public TrayAnimationTimerTask(int x, int vw, int screenWidth) {
+        public TrayAnimationTimerTask(Map<String, Object> data, int x, int vw, int screenWidth) {
             super();
+            this.data = data;
             mDestY = lastYPosition;
             switch (WindowSetup.positionGravity) {
                 case "auto":
@@ -369,6 +376,7 @@ public class OverlayService extends Service implements View.OnTouchListener {
                 if (Math.abs(params.x - mDestX) < 2 && Math.abs(params.y - mDestY) < 2) {
                     TrayAnimationTimerTask.this.cancel();
                     mTrayAnimationTimer.cancel();
+                    OverlayStatusEmitter.emitAnimationEnd(data);
                 }
             });
         }

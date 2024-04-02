@@ -21,6 +21,16 @@ public abstract class OverlayStatusEmitter {
         }
     }
 
+    public static Map<String, Object> fillViewData(View view, Map<String, Object> data) {
+        data.put("height", view.getHeight());
+        data.put("width", view.getWidth());
+        int[] loc = new int[2];
+        view.getLocationOnScreen(loc);
+        data.put("viewX", loc[0]);
+        data.put("viewY", loc[1]);
+        return data;
+    }
+
     static void emitTouchEvent(MotionEvent event, View view) {
         Map<String, Object> data = new HashMap<>();
         data.put("action", event.getAction());
@@ -28,15 +38,19 @@ public abstract class OverlayStatusEmitter {
         data.put("y", event.getY());
         data.put("rawX", event.getRawX());
         data.put("rawY", event.getRawY());
-        data.put("height", view.getHeight());
-        data.put("width", view.getWidth());
         data.put("pointerCount", event.getPointerCount());
+        fillViewData(view, data);
 
-        int[] loc = new int[2];
-        view.getLocationOnScreen(loc);
-        data.put("viewX", loc[0]);
-        data.put("viewY", loc[1]);
+        if (CachedMessageChannels.mainAppMessageChannel != null) {
+            CachedMessageChannels.mainAppMessageChannel.invokeMethod("message", data);
+        }
+        if (CachedMessageChannels.overlayMessageChannel != null) {
+            CachedMessageChannels.overlayMessageChannel.invokeMethod("message", data);
+        }
+    }
 
+    public static void emitAnimationEnd(Map<String, Object> data) {
+        data.put("AnimationEnd" ,1);
         if (CachedMessageChannels.mainAppMessageChannel != null) {
             CachedMessageChannels.mainAppMessageChannel.invokeMethod("message", data);
         }
