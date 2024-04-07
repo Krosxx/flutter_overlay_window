@@ -1,6 +1,6 @@
 # flutter_overlay_window
 
-Flutter plugin for displaying your flutter windows over other apps on the screen
+Flutter plugin for displaying your flutter views over other apps on the screen
 
 <!-- ## Preview -->
 
