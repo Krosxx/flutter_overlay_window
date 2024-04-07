@@ -13,7 +13,7 @@ class FlutterOverlayWindow {
   static const _channel = MethodChannel("x-slayer/overlay_channel");
   static const _overlayChannel = MethodChannel("x-slayer/overlay");
   static const _overlayMessageChannel =
-      MethodChannel("x-slayer/overlay_messenger", JSONMethodCodec());
+  MethodChannel("x-slayer/overlay_messenger", JSONMethodCodec());
 
   /// Open overLay content
   ///
@@ -21,34 +21,30 @@ class FlutterOverlayWindow {
   /// `height` the overlay height and default is [WindowSize.fullCover]
   /// `width` the overlay width and default is [WindowSize.matchParent]
   /// `alignment` the alignment postion on screen and default is [OverlayAlignment.center]
-  /// `visibilitySecret` the detail displayed in notifications on the lock screen and default is [NotificationVisibility.visibilitySecret]
   /// `OverlayFlag` the overlay flag and default is [OverlayFlag.defaultFlag]
-  /// `overlayTitle` the notification message and default is "overlay activated"
-  /// `overlayContent` the notification message
   /// `enableDrag` to enable/disable dragging the overlay over the screen and default is "false"
   /// `positionGravity` the overlay postion after drag and default is [PositionGravity.none]
-  static Future<void> showOverlay({
+  static Future<void> showOverlay(String winName, {
     int height = WindowSize.fullCover,
     int width = WindowSize.matchParent,
+    int xPos = 0,
+    int yPos = 100,
     OverlayAlignment alignment = OverlayAlignment.center,
-    NotificationVisibility visibility = NotificationVisibility.visibilitySecret,
     OverlayFlag flag = OverlayFlag.defaultFlag,
-    String overlayTitle = "overlay activated",
-    String? overlayContent,
     bool enableDrag = false,
     PositionGravity positionGravity = PositionGravity.none,
   }) async {
     await _channel.invokeMethod(
       'showOverlay',
       {
+        "win_name": winName,
         "height": height,
         "width": width,
         "alignment": alignment.name,
         "flag": flag.name,
-        "overlayTitle": overlayTitle,
-        "overlayContent": overlayContent,
         "enableDrag": enableDrag,
-        "notificationVisibility": visibility.name,
+        "xPos": xPos,
+        "yPos": yPos,
         "positionGravity": positionGravity.name,
       },
     );
@@ -76,8 +72,9 @@ class FlutterOverlayWindow {
   }
 
   /// Closes overlay if open
-  static Future<bool?> closeOverlay() async {
-    final bool? _res = await _channel.invokeMethod('closeOverlay');
+  static Future<bool?> closeOverlay(String winName) async {
+    final bool? _res = await _channel.invokeMethod(
+        'closeOverlay', {"win_name": winName});
     return _res;
   }
 
@@ -116,17 +113,19 @@ class FlutterOverlayWindow {
   }
 
   /// Update the overlay flag while the overlay in action
-  static Future<bool?> updateFlag(OverlayFlag flag) async {
-    final bool? _res = await _overlayChannel
-        .invokeMethod<bool?>('updateFlag', {'flag': flag.name});
+  static Future<bool?> updateFlag(String winName, OverlayFlag flag) async {
+    final bool? _res = await _channel.invokeMethod<bool?>('updateFlag',
+        {"win_name": winName, 'flag': flag.name});
     return _res;
   }
 
   /// Update the overlay size in the screen
-  static Future<bool?> resizeOverlay(int width, int height) async {
-    final bool? _res = await _overlayChannel.invokeMethod<bool?>(
+  static Future<bool?> resizeOverlay(String winName, int width,
+      int height) async {
+    final bool? _res = await _channel.invokeMethod<bool?>(
       'resizeOverlay',
       {
+        "win_name": winName,
         'width': width,
         'height': height,
       },
@@ -135,8 +134,9 @@ class FlutterOverlayWindow {
   }
 
   /// Check if the current overlay is active
-  static Future<bool> isActive() async {
-    final bool? _res = await _channel.invokeMethod<bool?>('isOverlayActive');
+  static Future<bool> isActive(String winName) async {
+    final bool? _res = await _channel.invokeMethod<bool?>(
+        'isOverlayActive', {"win_name": winName});
     return _res ?? false;
   }
 

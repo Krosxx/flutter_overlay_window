@@ -10,28 +10,23 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import java.util.Objects;
 
-import io.flutter.FlutterInjector;
 import io.flutter.embedding.engine.FlutterEngine;
-import io.flutter.embedding.engine.FlutterEngineCache;
-import io.flutter.embedding.engine.FlutterEngineGroup;
-import io.flutter.embedding.engine.FlutterEngineGroupCache;
-import io.flutter.embedding.engine.dart.DartExecutor;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.JSONMethodCodec;
-import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
-import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry;
 
 public class FlutterOverlayWindowPlugin implements
-        FlutterPlugin, ActivityAware, MethodCallHandler,
+        FlutterPlugin, ActivityAware,
         PluginRegistry.ActivityResultListener {
+
 
     public interface EngineListener {
         void onPreEngineRestart(@NonNull FlutterEngine engine);
@@ -47,100 +42,43 @@ public class FlutterOverlayWindowPlugin implements
     private Result pendingResult;
     final int REQUEST_CODE_FOR_OVERLAY_PERMISSION = 1248;
     @Nullable
-    FlutterPluginBinding flutterBinding;
-    @Nullable
     ActivityPluginBinding activityPluginBinding;
-    boolean isMainAppEngine;
+
+    static boolean isMainEngine = true;
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
-        Log.i("FlutterOverlay", "FlutterOverlayWindowPlugin onAttachedToEngine: " + flutterPluginBinding.getBinaryMessenger());
-        flutterBinding = flutterPluginBinding;
+        Log.i("FlutterOverlay", "FlutterOverlayWindowPlugin onAttachedToEngine: " + flutterPluginBinding.getFlutterEngine());
         this.context = flutterPluginBinding.getApplicationContext();
         channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), OverlayConstants.CHANNEL_TAG);
-        channel.setMethodCallHandler(this);
+        channel.setMethodCallHandler(new FloatManagerChannel(this, flutterPluginBinding));
 
-        FlutterEngineGroup overlayEngineGroup = ensureEngineGroupCreated(context);
-        isMainAppEngine = flutterBinding.getEngineGroup() != overlayEngineGroup;
-        registerMessageChannel(isMainAppEngine);
+        // boolean isMainAppEngine = !CachedMessageChannels.overlayMessageChannels.containsKey(flutterPluginBinding.getFlutterEngine());
+        Log.i("FlutterOverlay", "FlutterOverlayWindowPlugin  isMain " + isMainEngine);
+        registerMessageChannel(isMainEngine, flutterPluginBinding);
+        isMainEngine = false;
     }
 
-    @Override
-    public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    public void requestFloatPermission(Result result) {
         pendingResult = result;
-        if (call.method.equals("checkPermission")) {
-            result.success(checkOverlayPermission());
-        } else if (call.method.equals("requestPermission")) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
-                intent.setData(Uri.parse("package:" + mActivity.getPackageName()));
-                mActivity.startActivityForResult(intent, REQUEST_CODE_FOR_OVERLAY_PERMISSION);
-            } else {
-                result.success(true);
-            }
-        } else if (call.method.equals("showOverlay")) {
-            if (!checkOverlayPermission()) {
-                result.error("PERMISSION", "overlay permission is not enabled", null);
-                return;
-            }
-
-            ensureEngineCreated(context);
-
-            Integer height = call.argument("height");
-            Integer width = call.argument("width");
-            String alignment = call.argument("alignment");
-            String flag = call.argument("flag");
-            String overlayTitle = call.argument("overlayTitle");
-            String overlayContent = call.argument("overlayContent");
-            String notificationVisibility = call.argument("notificationVisibility");
-            boolean enableDrag = call.argument("enableDrag");
-            String positionGravity = call.argument("positionGravity");
-
-            WindowSetup.width = width != null ? width : -1;
-            WindowSetup.height = height != null ? height : -1;
-            WindowSetup.enableDrag = enableDrag;
-            WindowSetup.setGravityFromAlignment(alignment != null ? alignment : "center");
-            WindowSetup.setFlag(flag != null ? flag : "flagNotFocusable");
-            WindowSetup.overlayTitle = overlayTitle;
-            WindowSetup.overlayContent = overlayContent == null ? "" : overlayContent;
-            WindowSetup.positionGravity = positionGravity;
-            WindowSetup.setNotificationVisibility(notificationVisibility);
-
-            final Intent intent = new Intent(context, OverlayService.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            context.startService(intent);
-            result.success(null);
-        } else if (call.method.equals("isOverlayActive")) {
-            result.success(OverlayService.isRunning);
-            return;
-        } else if (call.method.equals("closeOverlay")) {
-            if (OverlayService.isRunning) {
-                final Intent i = new Intent(context, OverlayService.class);
-                i.putExtra(OverlayService.INTENT_EXTRA_IS_CLOSE_WINDOW, true);
-                context.startService(i);
-                result.success(true);
-            }
-            return;
-        } else {
-            result.notImplemented();
-        }
+        Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+        intent.setData(Uri.parse("package:" + context.getPackageName()));
+        mActivity.startActivityForResult(intent, REQUEST_CODE_FOR_OVERLAY_PERMISSION);
     }
+
 
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         channel.setMethodCallHandler(null);
-        flutterBinding = null;
-        unregisterMessageChannel(isMainAppEngine);
-        FlutterEngineGroupCache.getInstance().remove(OverlayConstants.CACHED_TAG);
+        unregisterMessageChannel(binding);
     }
 
     @Override
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
         activityPluginBinding = binding;
         mActivity = binding.getActivity();
-
-        ensureEngineCreated(context);
 
         binding.addActivityResultListener(this);
     }
@@ -162,94 +100,61 @@ public class FlutterOverlayWindowPlugin implements
         mActivity = null;
     }
 
-    private void registerMessageChannel(boolean isMainAppEngine) {
-        io.flutter.plugin.common.BinaryMessenger binaryMessenger = Objects.requireNonNull(flutterBinding).getBinaryMessenger();
+    private void registerMessageChannel(boolean isMainAppEngine, FlutterPluginBinding flutterPluginBinding) {
+        io.flutter.plugin.common.BinaryMessenger binaryMessenger = flutterPluginBinding.getBinaryMessenger();
         if (isMainAppEngine) {
             registerMainAppMessageChannel(binaryMessenger);
         } else {
-            registerOverlayMessageChannel(binaryMessenger);
+            registerOverlayMessageChannel(flutterPluginBinding);
         }
     }
 
-    private void unregisterMessageChannel(boolean isMainAppEngine) {
-        if (isMainAppEngine) {
+    private void unregisterMessageChannel(FlutterPluginBinding pluginBinding) {
+        boolean isMain = !CachedMessageChannels.overlayMessageChannels.containsKey(pluginBinding.getFlutterEngine());
+        if (isMain) {
             if (CachedMessageChannels.mainAppMessageChannel == null) return;
             CachedMessageChannels.mainAppMessageChannel.setMethodCallHandler(null);
             CachedMessageChannels.mainAppMessageChannel = null;
         } else {
-            if (CachedMessageChannels.overlayMessageChannel == null) return;
-            CachedMessageChannels.overlayMessageChannel.setMethodCallHandler(null);
-            CachedMessageChannels.overlayMessageChannel = null;
+            if (CachedMessageChannels.overlayMessageChannels.containsKey(pluginBinding.getFlutterEngine())) {
+                CachedMessageChannels.overlayMessageChannels.get(pluginBinding.getFlutterEngine()).setMethodCallHandler(null);
+                CachedMessageChannels.overlayMessageChannels.remove(pluginBinding.getFlutterEngine());
+            }
         }
     }
 
-    private void registerOverlayMessageChannel(io.flutter.plugin.common.BinaryMessenger overlyEngineBinaryMessenger) {
-        MethodChannel overlayMessageChannel = new MethodChannel(overlyEngineBinaryMessenger, OverlayConstants.MESSENGER_TAG, JSONMethodCodec.INSTANCE);
+    private void registerOverlayMessageChannel(FlutterPluginBinding binding) {
+        MethodChannel overlayMessageChannel = new MethodChannel(binding.getBinaryMessenger(), OverlayConstants.MESSENGER_TAG, JSONMethodCodec.INSTANCE);
         overlayMessageChannel.setMethodCallHandler((call, result) -> {
-            if (CachedMessageChannels.mainAppMessageChannel == null) {
-                result.success(false);
-                return;
+            int cnt = 0;
+            if (CachedMessageChannels.mainAppMessageChannel != null) {
+                CachedMessageChannels.mainAppMessageChannel.invokeMethod("message", call.arguments);
             }
-            CachedMessageChannels.mainAppMessageChannel.invokeMethod("message", call.arguments);
+            for (MethodChannel c : CachedMessageChannels.overlayMessageChannels.values()) {
+                if (c != overlayMessageChannel) {
+                    c.invokeMethod("message", call.arguments);
+                    cnt++;
+                }
+            }
+            Log.i("SubChannel", "转发 sub->sub/main: " + cnt + "/" + CachedMessageChannels.overlayMessageChannels.size());
             result.success(true);
         });
-        CachedMessageChannels.overlayMessageChannel = overlayMessageChannel;
+        CachedMessageChannels.overlayMessageChannels.put(binding.getFlutterEngine(), overlayMessageChannel);
     }
 
     private void registerMainAppMessageChannel(io.flutter.plugin.common.BinaryMessenger mainAppEngineBinaryMessenger) {
         MethodChannel mainAppMessageChannel = new MethodChannel(mainAppEngineBinaryMessenger, OverlayConstants.MESSENGER_TAG, JSONMethodCodec.INSTANCE);
         mainAppMessageChannel.setMethodCallHandler((call, result) -> {
-            if (CachedMessageChannels.overlayMessageChannel == null) {
-                result.success(false);
-                return;
+            Log.i("MainChannel", "转发 main->sub: " + CachedMessageChannels.overlayMessageChannels.size());
+            for (MethodChannel c : CachedMessageChannels.overlayMessageChannels.values()) {
+                c.invokeMethod("message", call.arguments);
             }
-            CachedMessageChannels.overlayMessageChannel.invokeMethod("message", call.arguments);
             result.success(true);
         });
         CachedMessageChannels.mainAppMessageChannel = mainAppMessageChannel;
     }
 
-    private FlutterEngineGroup ensureEngineGroupCreated(android.content.Context context) {
-        FlutterEngineGroup enn = FlutterEngineGroupCache.getInstance().get(OverlayConstants.CACHED_TAG);
-
-        if (enn == null) {
-            enn = new FlutterEngineGroup(context);
-            FlutterEngineGroupCache.getInstance().put(OverlayConstants.CACHED_TAG, enn);
-        }
-
-        return enn;
-    }
-
-    private void ensureEngineCreated(android.content.Context context) {
-        FlutterEngine engine = FlutterEngineCache.getInstance().get(OverlayConstants.CACHED_TAG);
-        if (engine == null) {
-            FlutterEngineGroup enn = ensureEngineGroupCreated(context);
-            DartExecutor.DartEntrypoint dEntry = new DartExecutor.DartEntrypoint(
-                    FlutterInjector.instance().flutterLoader().findAppBundlePath(),
-                    "overlayMain");
-            engine = Objects.requireNonNull(enn).createAndRunEngine(context, dEntry);
-            FlutterEngineCache.getInstance().put(OverlayConstants.CACHED_TAG, engine);
-            FlutterEngine finalEngine = engine;
-            engine.addEngineLifecycleListener(new FlutterEngine.EngineLifecycleListener() {
-                @Override
-                public void onPreEngineRestart() {
-                    if (engineListener != null) {
-                        engineListener.onPreEngineRestart(finalEngine);
-                    }
-                }
-
-                @Override
-                public void onEngineWillDestroy() {
-                    FlutterEngineCache.getInstance().remove(OverlayConstants.CACHED_TAG);
-                    if (engineListener != null) {
-                        engineListener.onEngineWillDestroy(finalEngine);
-                    }
-                }
-            });
-        }
-    }
-
-    private boolean checkOverlayPermission() {
+    public static boolean checkOverlayPermission(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             return Settings.canDrawOverlays(context);
         }
@@ -259,7 +164,10 @@ public class FlutterOverlayWindowPlugin implements
     @Override
     public boolean onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_CODE_FOR_OVERLAY_PERMISSION) {
-            pendingResult.success(checkOverlayPermission());
+            if (pendingResult != null) {
+                pendingResult.success(checkOverlayPermission(context));
+                pendingResult = null;
+            }
             return true;
         }
         return false;

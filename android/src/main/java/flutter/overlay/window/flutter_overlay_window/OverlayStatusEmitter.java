@@ -1,24 +1,21 @@
 package flutter.overlay.window.flutter_overlay_window;
 
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class OverlayStatusEmitter {
-    static private final String methodName = "isShowingOverlay";
-    static private boolean lastEmittedStatus;
+import io.flutter.plugin.common.MethodChannel;
 
-    static void emitIsShowing(boolean isShowing) {
-        if (isShowing == lastEmittedStatus) return;
-        lastEmittedStatus = isShowing;
-        if (CachedMessageChannels.mainAppMessageChannel != null) {
-            CachedMessageChannels.mainAppMessageChannel.invokeMethod(methodName, isShowing);
-        }
-        if (CachedMessageChannels.overlayMessageChannel != null) {
-            CachedMessageChannels.overlayMessageChannel.invokeMethod(methodName, isShowing);
-        }
+public abstract class OverlayStatusEmitter {
+
+    static void emitIsShowing(String winName, boolean isShowing) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("win_name", winName);
+        data.put("show", isShowing);
+        broadcast("isShowingOverlay", data);
     }
 
     public static Map<String, Object> fillViewData(View view, Map<String, Object> data) {
@@ -31,8 +28,9 @@ public abstract class OverlayStatusEmitter {
         return data;
     }
 
-    static void emitTouchEvent(MotionEvent event, View view) {
+    static void emitTouchEvent(MotionEvent event, View view, String winName) {
         Map<String, Object> data = new HashMap<>();
+        data.put("win_name", winName);
         data.put("action", event.getAction());
         data.put("x", event.getX());
         data.put("y", event.getY());
@@ -40,22 +38,22 @@ public abstract class OverlayStatusEmitter {
         data.put("rawY", event.getRawY());
         data.put("pointerCount", event.getPointerCount());
         fillViewData(view, data);
+        Log.i("emitTouchEvent", "emitTouchEvent " + data);
 
-        if (CachedMessageChannels.mainAppMessageChannel != null) {
-            CachedMessageChannels.mainAppMessageChannel.invokeMethod("message", data);
-        }
-        if (CachedMessageChannels.overlayMessageChannel != null) {
-            CachedMessageChannels.overlayMessageChannel.invokeMethod("message", data);
-        }
+        broadcast("message", data);
     }
 
     public static void emitAnimationEnd(Map<String, Object> data) {
-        data.put("AnimationEnd" ,1);
+        data.put("AnimationEnd", 1);
+        broadcast("message", data);
+    }
+
+    private static void broadcast(String method, Object data) {
         if (CachedMessageChannels.mainAppMessageChannel != null) {
-            CachedMessageChannels.mainAppMessageChannel.invokeMethod("message", data);
+            CachedMessageChannels.mainAppMessageChannel.invokeMethod(method, data);
         }
-        if (CachedMessageChannels.overlayMessageChannel != null) {
-            CachedMessageChannels.overlayMessageChannel.invokeMethod("message", data);
+        for (MethodChannel c : CachedMessageChannels.overlayMessageChannels.values()) {
+            c.invokeMethod(method, data);
         }
     }
 }

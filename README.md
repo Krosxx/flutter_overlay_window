@@ -1,12 +1,9 @@
 # flutter_overlay_window
 
-Flutter plugin for displaying your flutter app over other apps on the screen
+Flutter plugin for displaying your flutter windows over other apps on the screen
 
-## Preview
+<!-- ## Preview -->
 
-|TrueCaller overlay example|click-through overlay example|  Messanger chat-head example |
-| :-:| :-: | :-: |
-| <img src='https://user-images.githubusercontent.com/22800380/165636217-8957396b-dc54-4e6d-aa50-e8bfdb9383cf.gif' height='600' width='410' /> | <img src='https://user-images.githubusercontent.com/22800380/165636120-dcd9ee13-5fca-4f8a-a562-b2f53c0b5e24.gif' height='600' width='410'/> | <img src='https://user-images.githubusercontent.com/22800380/178730917-40f267bb-63a2-4ad3-ba69-f7c1285a1882.gif' height='600' width='410'/> |
 
 ## Installation
 
@@ -14,21 +11,12 @@ Add package to your pubspec:
 
 ```yaml
 dependencies:
-  flutter_overlay_window: any # or the latest version on Pub
+  flutter_overlay_window:
+    git:
+      url: https://github.com/Krosxx/flutter_overlay_window.git
+      ref: main
 ```
 
-### Android
-
-You'll need to add the `SYSTEM_ALERT_WINDOW` permission and `OverlayService` to your Android Manifest.
-
-```XML
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-
-    <application>
-        ...
-        <service android:name="flutter.overlay.window.flutter_overlay_window.OverlayService" android:exported="false" />
-    </application>
-```
 
 ### Entry point
 
@@ -45,6 +33,15 @@ void overlayMain() {
   ));
 }
 
+// overlay entry point
+@pragma("vm:entry-point")
+void overlayView2() {
+  runApp(const MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: Material(child: Text("My overlay window2."))
+  ));
+}
+
 ```
 
 ### USAGE
@@ -58,25 +55,29 @@ void overlayMain() {
  final bool status = await FlutterOverlayWindow.requestPermission();
 
  /// Open overLay content
- ///
- /// - Optional arguments:
- /// `height` the overlay height and default is [overlaySizeFill]
- /// `width` the overlay width and default is [overlaySizeFill]
- /// `OverlayAlignment` the alignment postion on screen and default is [OverlayAlignment.center]
- /// `OverlayFlag` the overlay flag and default is [OverlayFlag.defaultFlag]
- /// `overlayTitle` the notification message and default is "overlay activated"
- /// `overlayContent` the notification message
- /// `enableDrag` to enable/disable dragging the overlay over the screen and default is "false"
- /// `positionGravity` the overlay postion after drag and default is [PositionGravity.none]
- await FlutterOverlayWindow.showOverlay();
+ 
+await FlutterOverlayWindow.showOverlay(
+  "overlayMain",
+  height: 70,
+  width: 70,
+  xPos: -1,
+  yPos: 100,
+  alignment: OverlayAlignment.topLeft,
+  enableDrag: true,
+  positionGravity: PositionGravity.auto,
+);
+
+/// show float window 2
+await FlutterOverlayWindow.showOverlay("overlayView2");
 
  /// closes overlay if open
- await FlutterOverlayWindow.closeOverlay();
+ await FlutterOverlayWindow.closeOverlay("overlayMain");
 
- /// broadcast data to and from overlay app
+ /// broadcast data to app and otther overlays.
  await FlutterOverlayWindow.shareData("Hello from the other side");
 
- /// streams message shared between overlay and main app
+ /// streams message shared between overlays and main app
+ // drag touch event and animation end event
   FlutterOverlayWindow.overlayListener.listen((event) {
       log("Current Event: $event");
     });
@@ -89,7 +90,7 @@ void overlayMain() {
  await FlutterOverlayWindow.updateFlag(OverlayFlag.defaultFlag);
 
  /// Update the overlay size in the screen
- await FlutterOverlayWindow.resizeOverlay(80, 120);
+ await FlutterOverlayWindow.resizeOverlay("overlayMain",80, 120);
 
 ```
 
