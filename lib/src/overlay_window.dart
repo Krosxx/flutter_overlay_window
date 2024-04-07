@@ -18,14 +18,14 @@ class FlutterOverlayWindow {
   /// Open overLay content
   ///
   /// - Optional arguments:
-  /// `height` the overlay height and default is [WindowSize.fullCover]
+  /// `height` the overlay height and default is [WindowSize.matchParent]
   /// `width` the overlay width and default is [WindowSize.matchParent]
   /// `alignment` the alignment postion on screen and default is [OverlayAlignment.center]
   /// `OverlayFlag` the overlay flag and default is [OverlayFlag.defaultFlag]
   /// `enableDrag` to enable/disable dragging the overlay over the screen and default is "false"
   /// `positionGravity` the overlay postion after drag and default is [PositionGravity.none]
   static Future<void> showOverlay(String winName, {
-    int height = WindowSize.fullCover,
+    int height = WindowSize.matchParent,
     int width = WindowSize.matchParent,
     int xPos = 0,
     int yPos = 100,
