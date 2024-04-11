@@ -77,6 +77,7 @@ public class FloatingWindow implements View.OnTouchListener {
     public void show() {
         if (flutterView != null) {
             // flutterView.attachToFlutterEngine(flutterEngine);
+            flutterEngine.getLifecycleChannel().appIsResumed();
             windowManager.addView(flutterView, flutterView.getLayoutParams());
             OverlayStatusEmitter.emitIsShowing(winName, true);
             isShowing = true;
@@ -109,7 +110,9 @@ public class FloatingWindow implements View.OnTouchListener {
             params.alpha = MAXIMUM_OPACITY_ALLOWED_FOR_S_AND_HIGHER;
         }
         params.gravity = config.gravity;
-        flutterView.setOnTouchListener(this);
+        if (config.enableDrag) {
+            flutterView.setOnTouchListener(this);
+        }
         windowManager.addView(flutterView, params);
         OverlayStatusEmitter.emitIsShowing(winName, true);
     }
