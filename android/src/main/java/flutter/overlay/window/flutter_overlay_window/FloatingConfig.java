@@ -8,7 +8,7 @@ public class FloatingConfig {
 
     int height = WindowManager.LayoutParams.MATCH_PARENT;
     int width = WindowManager.LayoutParams.MATCH_PARENT;
-    int flag = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+    // int flag = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
     int gravity = Gravity.CENTER;
     String positionGravity = "none";
     boolean enableDrag = false;
@@ -25,7 +25,6 @@ public class FloatingConfig {
         this.width = width;
         this.xPos = xPos;
         this.yPos = yPos;
-        setFlag(flagName);
         setGravityFromAlignment(gravity);
         this.positionGravity = positionGravity;
         this.enableDrag = enableDrag;
@@ -70,18 +69,6 @@ public class FloatingConfig {
 
     }
 
-    void setFlag(String name) {
-        if (name.equalsIgnoreCase("flagNotFocusable") || name.equalsIgnoreCase("defaultFlag")) {
-            flag = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-        }
-        if (name.equalsIgnoreCase("flagNotTouchable") || name.equalsIgnoreCase("clickThrough")) {
-            flag = WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-                    WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
-        }
-        if (name.equalsIgnoreCase("flagNotTouchModal") || name.equalsIgnoreCase("focusPointer")) {
-            flag = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
-        }
-    }
 
     public int getHeight() {
         return height;
@@ -99,9 +86,6 @@ public class FloatingConfig {
         this.width = width;
     }
 
-    public int getFlag() {
-        return flag;
-    }
 
     public int getGravity() {
         return gravity;
