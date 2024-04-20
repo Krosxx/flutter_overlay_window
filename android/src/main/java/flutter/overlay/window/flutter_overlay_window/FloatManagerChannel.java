@@ -76,17 +76,17 @@ public class FloatManagerChannel implements MethodChannel.MethodCallHandler {
                 }
                 result.success(null);
                 return;
-            // case "updateFlag":
-            //     winName = call.argument("win_name");
-            //     String flag = call.argument("flag");
-            //     win = FloatManager.getByName(winName);
-            //     if (win != null) {
-            //         win.updateFlag(flag);
-            //         result.success(true);
-            //     } else {
-            //         result.success(false);
-            //     }
-            //     return;
+            case "updateFlag":
+                winName = call.argument("win_name");
+                String flag = call.argument("flag");
+                win = FloatManager.getByName(winName);
+                if (win != null) {
+                    win.updateFlag(flag);
+                    result.success(true);
+                } else {
+                    result.success(false);
+                }
+                return;
             case "resizeOverlay":
                 winName = call.argument("win_name");
                 int width = call.argument("width");

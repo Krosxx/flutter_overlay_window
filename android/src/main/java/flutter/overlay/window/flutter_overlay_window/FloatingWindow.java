@@ -80,6 +80,7 @@ public class FloatingWindow implements View.OnTouchListener {
             // flutterView.attachToFlutterEngine(flutterEngine);
             windowManager.addView(flutterView, flutterView.getLayoutParams());
             OverlayStatusEmitter.emitIsShowing(winName, true);
+            flutterEngine.getLifecycleChannel().appIsResumed();
             isShowing = true;
             return;
         }
@@ -100,7 +101,7 @@ public class FloatingWindow implements View.OnTouchListener {
                 config.xPos == -1 ? screenWidth() : dpToPx(config.xPos),
                 dpToPx(config.yPos),
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY : WindowManager.LayoutParams.TYPE_PHONE,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+                config.flag
                         // | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
                         | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
                         | WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR
@@ -202,22 +203,22 @@ public class FloatingWindow implements View.OnTouchListener {
         return true;
     }
 
-    // public boolean updateFlag(String flag) {
-    //     config.setFlag(flag);
-    //     WindowManager.LayoutParams params = (WindowManager.LayoutParams) flutterView.getLayoutParams();
-    //     params.flags = config.flag |
-    //             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
-    //             WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED;
-    //     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && config.flag == clickableFlag) {
-    //         params.alpha = MAXIMUM_OPACITY_ALLOWED_FOR_S_AND_HIGHER;
-    //     } else {
-    //         params.alpha = 1;
-    //     }
-    //     if (isShowing) {
-    //         windowManager.updateViewLayout(flutterView, params);
-    //     }
-    //     return true;
-    // }
+    public boolean updateFlag(String flag) {
+        config.setFlag(flag);
+        WindowManager.LayoutParams params = (WindowManager.LayoutParams) flutterView.getLayoutParams();
+        params.flags = config.flag |
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+                WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && config.flag == clickableFlag) {
+            params.alpha = MAXIMUM_OPACITY_ALLOWED_FOR_S_AND_HIGHER;
+        } else {
+            params.alpha = 1;
+        }
+        if (isShowing) {
+            windowManager.updateViewLayout(flutterView, params);
+        }
+        return true;
+    }
 
     @SuppressLint("ClickableViewAccessibility")
     @Override

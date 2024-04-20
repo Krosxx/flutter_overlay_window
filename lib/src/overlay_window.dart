@@ -30,7 +30,7 @@ class FlutterOverlayWindow {
     int xPos = 0,
     int yPos = 100,
     OverlayAlignment alignment = OverlayAlignment.center,
-    OverlayFlag flag = OverlayFlag.defaultFlag,
+    OverlayFlag flag = OverlayFlag.NotFocusable,
     bool enableDrag = false,
     PositionGravity positionGravity = PositionGravity.none,
   }) async {
